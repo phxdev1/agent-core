@@ -1,0 +1,236 @@
+{
+  "version": "1.0.0",
+  "tests": [
+    {
+      "name": "basic_chat",
+      "description": "Test basic chat functionality",
+      "input": {
+        "message": "Hello, how are you?",
+        "session_id": "test_001",
+        "mode": "chat"
+      },
+      "expected": {
+        "status": "success",
+        "has_response": true,
+        "response_min_length": 10
+      },
+      "timeout": 30
+    },
+    {
+      "name": "session_continuity",
+      "description": "Test conversation memory across messages",
+      "steps": [
+        {
+          "input": {
+            "message": "My name is Alice",
+            "session_id": "test_002",
+            "mode": "chat"
+          },
+          "expected": {
+            "status": "success"
+          }
+        },
+        {
+          "input": {
+            "message": "What is my name?",
+            "session_id": "test_002",
+            "mode": "chat"
+          },
+          "expected": {
+            "status": "success",
+            "response_contains": ["Alice"]
+          }
+        }
+      ],
+      "timeout": 60
+    },
+    {
+      "name": "research_mode",
+      "description": "Test research capabilities",
+      "input": {
+        "message": "What are transformers in machine learning?",
+        "session_id": "test_003",
+        "mode": "research"
+      },
+      "expected": {
+        "status": "success",
+        "has_response": true,
+        "metadata_has": ["sources"]
+      },
+      "timeout": 120
+    },
+    {
+      "name": "context_window",
+      "description": "Test custom context window size",
+      "input": {
+        "message": "Tell me about context windows",
+        "session_id": "test_004",
+        "mode": "chat",
+        "context_window": 8
+      },
+      "expected": {
+        "status": "success",
+        "metadata_contains": {
+          "context_depth": 8
+        }
+      },
+      "timeout": 30
+    },
+    {
+      "name": "error_handling_empty",
+      "description": "Test error handling for empty message",
+      "input": {
+        "message": "",
+        "session_id": "test_005"
+      },
+      "expected": {
+        "status": "failed",
+        "has_error": true,
+        "error_contains": "No message provided"
+      },
+      "timeout": 10
+    },
+    {
+      "name": "parallel_sessions",
+      "description": "Test multiple concurrent sessions",
+      "parallel": true,
+      "tests": [
+        {
+          "input": {
+            "message": "Count to 5",
+            "session_id": "parallel_001"
+          },
+          "expected": {
+            "status": "success"
+          }
+        },
+        {
+          "input": {
+            "message": "List 3 colors",
+            "session_id": "parallel_002"
+          },
+          "expected": {
+            "status": "success"
+          }
+        },
+        {
+          "input": {
+            "message": "Name 3 animals",
+            "session_id": "parallel_003"
+          },
+          "expected": {
+            "status": "success"
+          }
+        }
+      ],
+      "timeout": 45
+    },
+    {
+      "name": "health_check",
+      "description": "Test health check endpoint",
+      "endpoint": "/health",
+      "method": "GET",
+      "expected": {
+        "status_code": 200,
+        "response_contains": {
+          "status": "healthy",
+          "redis": "connected",
+          "agent": "ready"
+        }
+      },
+      "timeout": 5
+    },
+    {
+      "name": "performance_benchmark",
+      "description": "Benchmark response times",
+      "input": {
+        "message": "What is 2+2?",
+        "session_id": "benchmark_001"
+      },
+      "expected": {
+        "status": "success",
+        "max_processing_time": 5.0
+      },
+      "repeat": 5,
+      "timeout": 30
+    },
+    {
+      "name": "memory_persistence",
+      "description": "Test Redis memory persistence",
+      "steps": [
+        {
+          "input": {
+            "message": "Remember the code: XYZ123",
+            "session_id": "persist_001"
+          },
+          "expected": {
+            "status": "success"
+          }
+        },
+        {
+          "action": "wait",
+          "duration": 2
+        },
+        {
+          "action": "restart_handler"
+        },
+        {
+          "input": {
+            "message": "What was the code I told you?",
+            "session_id": "persist_001"
+          },
+          "expected": {
+            "status": "success",
+            "response_contains": ["XYZ123"]
+          }
+        }
+      ],
+      "timeout": 90
+    },
+    {
+      "name": "large_context",
+      "description": "Test handling of large conversation history",
+      "setup": {
+        "populate_session": {
+          "session_id": "large_001",
+          "message_count": 50
+        }
+      },
+      "input": {
+        "message": "Summarize our conversation",
+        "session_id": "large_001",
+        "context_window": 10
+      },
+      "expected": {
+        "status": "success",
+        "metadata_contains": {
+          "context_depth": 10
+        }
+      },
+      "timeout": 60
+    }
+  ],
+  "config": {
+    "base_url": "https://api.runpod.ai/v2/{ENDPOINT_ID}",
+    "auth_header": "Authorization: Bearer {RUNPOD_API_KEY}",
+    "max_retries": 3,
+    "retry_delay": 5,
+    "log_level": "INFO"
+  },
+  "smoke_tests": [
+    "health_check",
+    "basic_chat",
+    "error_handling_empty"
+  ],
+  "integration_tests": [
+    "session_continuity",
+    "research_mode",
+    "context_window",
+    "parallel_sessions"
+  ],
+  "stress_tests": [
+    "performance_benchmark",
+    "large_context",
+    "memory_persistence"
+  ]
+}
