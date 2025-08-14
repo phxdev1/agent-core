@@ -1,0 +1,15 @@
+# Core Agent Files (Platform-Independent)
+agent_chat.py
+unified_memory_system.py
+temporal_context.py
+prompt_evolution_system.py
+research_system.py
+pdf_extractor.py
+pdf_summarizer.py
+knowledge_graph_enhanced.py
+adaptive_personality_system.py
+context_intelligence_system.py
+hybrid_search_system.py
+redis_logger.py
+rq_worker_system.py
+config.json

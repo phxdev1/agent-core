@@ -1,0 +1,37 @@
+# Core Dependencies
+aiohttp>=3.8.0
+redis>=4.5.0
+rq>=1.13.0
+rq-scheduler>=0.13.0
+psutil>=5.9.0
+
+# LLM and AI
+openai>=1.0.0
+tiktoken>=0.5.0
+sentence-transformers>=2.2.0
+torch>=2.0.0
+
+# Document Processing
+pypdf>=3.0.0
+pdfplumber>=0.9.0
+pymupdf>=1.23.0
+
+# Search and Knowledge
+numpy>=1.24.0
+scikit-learn>=1.3.0
+rank-bm25>=0.2.2
+faiss-cpu>=1.7.4
+
+# Web and Research
+beautifulsoup4>=4.12.0
+arxiv>=1.4.0
+scholarly>=1.7.0
+serpapi>=0.1.5
+aiofiles>=23.0.0
+
+# Utilities
+python-dotenv>=1.0.0
+croniter>=1.3.0
+schedule>=1.2.0
+asyncio>=3.4.3
+typing-extensions>=4.5.0
