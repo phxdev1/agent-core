@@ -1,5 +1,7 @@
 # Agent Core
 
+[![Runpod](https://api.runpod.io/badge/phxdev1/agent-core)](https://console.runpod.io/hub/phxdev1/agent-core)
+
 A sophisticated conversational AI agent with persistent memory, research capabilities, and self-evolving prompts.
 
 ## Features
