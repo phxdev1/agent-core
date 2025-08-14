@@ -1,0 +1,173 @@
+{
+  "version": "1.0.0",
+  "name": "agent-core",
+  "title": "AI Agent with Persistent Memory",
+  "description": "Sophisticated conversational AI agent with Redis-backed memory, research capabilities, and self-evolving prompts",
+  "author": "phxdev1",
+  "github": "https://github.com/phxdev1/agent-core",
+  "docker": {
+    "base_image": "python:3.11-slim",
+    "dockerfile": "Dockerfile.runpod",
+    "build_commands": [
+      "apt-get update && apt-get install -y gcc g++ build-essential curl redis-server",
+      "pip install --no-cache-dir -r requirements.txt",
+      "pip install runpod"
+    ]
+  },
+  "env": {
+    "PYTHONUNBUFFERED": "1",
+    "REDIS_HOST": "localhost",
+    "REDIS_PORT": "6379"
+  },
+  "handler": {
+    "handler_path": "runpod_handler.py",
+    "handler_function": "handler"
+  },
+  "runtime": {
+    "container_start_timeout": 600,
+    "max_workers": 1,
+    "enable_cuda": false,
+    "gpu_required": false
+  },
+  "healthcheck": {
+    "path": "/health",
+    "interval": 30,
+    "timeout": 10
+  },
+  "resources": {
+    "min_vcpu": 2,
+    "min_memory": 4096,
+    "recommended_vcpu": 4,
+    "recommended_memory": 8192
+  },
+  "ports": [
+    {
+      "port": 6379,
+      "name": "redis",
+      "protocol": "tcp",
+      "expose": false
+    }
+  ],
+  "volumes": [
+    {
+      "path": "/data",
+      "size": 10,
+      "description": "Persistent storage for Redis and knowledge base"
+    }
+  ],
+  "secrets": [
+    {
+      "name": "OPENROUTER_API_KEY",
+      "description": "OpenRouter API key for LLM access",
+      "required": true
+    },
+    {
+      "name": "SERPAPI_KEY",
+      "description": "SerpAPI key for web search (optional)",
+      "required": false
+    }
+  ],
+  "inputs": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "User message to process"
+        },
+        "session_id": {
+          "type": "string",
+          "description": "Session ID for conversation continuity",
+          "default": "default"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["chat", "research", "command"],
+          "default": "chat",
+          "description": "Processing mode"
+        },
+        "context_window": {
+          "type": "integer",
+          "default": 4,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Number of previous messages to include as context"
+        }
+      },
+      "required": ["message"]
+    }
+  },
+  "outputs": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "response": {
+          "type": "string",
+          "description": "Agent's response"
+        },
+        "session_id": {
+          "type": "string",
+          "description": "Session ID for future requests"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Response metadata",
+          "properties": {
+            "tokens_used": {"type": "integer"},
+            "processing_time": {"type": "number"},
+            "sources": {"type": "array"},
+            "confidence": {"type": "number"}
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "input": {
+        "message": "What is quantum computing?",
+        "session_id": "user123",
+        "mode": "chat"
+      },
+      "output": {
+        "response": "Quantum computing is a type of computation that leverages quantum mechanical phenomena...",
+        "session_id": "user123",
+        "metadata": {
+          "tokens_used": 245,
+          "processing_time": 1.2,
+          "confidence": 0.95
+        }
+      }
+    },
+    {
+      "input": {
+        "message": "Research recent papers on transformers",
+        "mode": "research"
+      },
+      "output": {
+        "response": "I found 5 recent papers on transformers from ArXiv...",
+        "session_id": "default",
+        "metadata": {
+          "sources": ["arxiv:2401.12345", "arxiv:2401.12346"],
+          "processing_time": 3.5
+        }
+      }
+    }
+  ],
+  "pricing": {
+    "serverless": {
+      "base_cost": 0.00015,
+      "per_second": 0.00003
+    }
+  },
+  "tags": [
+    "ai",
+    "chatbot",
+    "nlp",
+    "research",
+    "rag",
+    "memory",
+    "agent",
+    "llm"
+  ]
+}

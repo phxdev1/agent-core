@@ -68,6 +68,7 @@ data/
 *.json
 !config.json
 !.env.example
+!.runpod/hub.json
 
 # Temporary files
 tmp/
