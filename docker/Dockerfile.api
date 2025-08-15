@@ -46,4 +46,4 @@ ENV MALLOC_MMAP_THRESHOLD_=100000
 EXPOSE 8000
 
 # Run LLM API with AI responses
-ENTRYPOINT ["python3", "api/llm_api.py"]
+ENTRYPOINT ["python3", "api/quick_api.py"]

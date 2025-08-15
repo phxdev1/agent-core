@@ -27,7 +27,13 @@ kill_timeout = '5s'
   protocol = "tcp"
   processes = ['app']
   
-  # No public ports - internal only
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+  
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
   # The service will be accessible via:
   # - agent-core-api.internal:8000 (all instances)
   # - <machine-id>.vm.agent-core-api.internal:8000 (specific instance)

@@ -22,4 +22,4 @@ primary_region = "phx"
   memory = "512mb"
 
 [env]
-  PUBLIC_API_URL = "https://agent-core-gateway.fly.dev"
+  PUBLIC_API_URL = "https://agent-core-api.fly.dev"

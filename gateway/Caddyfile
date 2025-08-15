@@ -8,7 +8,7 @@
 :80, :443 {
     # API routes - anything starting with /api, /docs, /openapi
     @api {
-        path /api/* /docs* /openapi.json /health /ws/*
+        path /api/* /chat/* /docs* /openapi.json /ws/*
     }
     handle @api {
         reverse_proxy {

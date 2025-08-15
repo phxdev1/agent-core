@@ -15,7 +15,7 @@ COPY --from=builder /usr/bin/caddy /bin/caddy
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Copy Caddyfile
-COPY gateway/Caddyfile.us-eu /etc/caddy/Caddyfile
+COPY gateway/Caddyfile /etc/caddy/Caddyfile
 
 # Create data directory
 VOLUME ["/data"]

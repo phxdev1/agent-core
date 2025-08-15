@@ -117,7 +117,7 @@ export function Chat() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.PUBLIC_API_URL || 'https://agent-core-gateway.fly.dev'}/api/chat/public`, {
+      const response = await fetch(`${import.meta.env.PUBLIC_API_URL || 'https://agent-core-api.fly.dev'}/chat/public`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
