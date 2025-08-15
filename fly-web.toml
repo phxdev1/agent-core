@@ -1,4 +1,4 @@
-app = "agent-core-web"
+app = "agent-core-pwa"
 primary_region = "phx"
 
 [build]
