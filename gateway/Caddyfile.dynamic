@@ -1,0 +1,105 @@
+{
+    admin off
+    auto_https off
+}
+
+# Dynamic service discovery configuration
+:80, :443 {
+    # API routes with dynamic upstream discovery
+    @api {
+        path /api/* /docs* /openapi.json /health /ws/*
+    }
+    
+    handle @api {
+        reverse_proxy {
+            # Dynamic upstreams - Caddy will re-resolve DNS periodically
+            # Using SRV records for better service discovery
+            to {
+                dial agent-core-api.internal:8000
+            }
+            
+            # Caddy will re-resolve DNS every 30 seconds
+            # This picks up new/removed instances automatically
+            dial_timeout 2s
+            dial_fallback_delay 300ms
+            
+            # Load balancing
+            lb_policy least_conn
+            
+            # Health checks (removes unhealthy instances)
+            health_uri /health
+            health_interval 10s
+            health_timeout 2s
+            health_status 200
+            
+            # Failover
+            fail_duration 10s
+            max_fails 2
+            
+            # Connection pooling
+            keepalive 100
+            keepalive_idle_conns 10
+            
+            # Headers
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Web interface with dynamic discovery
+    handle {
+        reverse_proxy {
+            to {
+                dial agent-core-web.internal:8001
+            }
+            
+            dial_timeout 2s
+            dial_fallback_delay 300ms
+            
+            # Sticky sessions for web UI
+            lb_policy cookie {
+                name lb
+                secure
+                httponly
+            }
+            
+            # Health check
+            health_uri /
+            health_interval 15s
+            health_timeout 3s
+            
+            # Headers
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Security headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    # Region identification
+    header {
+        X-Served-By "{system.hostname}"
+        X-Region "{env.FLY_REGION}"
+    }
+
+    # Compression
+    encode gzip zstd
+
+    # Logging
+    log {
+        output stdout
+        format console
+        level ERROR
+    }
+}

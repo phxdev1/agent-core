@@ -1,0 +1,56 @@
+# Ultra-minimal configuration with bit-packed optimization
+app = 'agent-core'
+primary_region = 'iad'
+
+[build]
+  dockerfile = 'docker/Dockerfile.web.extreme'
+
+[env]
+  # Memory limits for bit-packed operation
+  GOGC = "20"                    # Aggressive GC
+  GOMEMLIMIT = "50MiB"          # Hard memory limit
+  GOMAXPROCS = "1"              # Single CPU for cache locality
+
+[[services]]
+  protocol = 'tcp'
+  internal_port = 8001
+  
+  [[services.ports]]
+    port = 443
+    handlers = ['tls', 'http']
+  
+  [[services.ports]]
+    port = 80
+    handlers = ['http']
+
+[http_service]
+  force_https = true
+  min_machines_running = 1
+  auto_stop_machines = 'suspend'
+  auto_start_machines = true
+
+  [http_service.concurrency]
+    type = 'requests'
+    hard_limit = 10000  # Can handle massive concurrency
+    soft_limit = 8000
+
+[[vm]]
+  memory = '64mb'  # Extreme: Everything fits in CPU cache
+  cpu_kind = 'shared'
+  cpus = 1
+  size = 'shared-cpu-1x'
+
+[metrics]
+  port = 9091
+  path = "/metrics"
+
+# Experimental performance features
+[experimental]
+  auto_rollback = true
+  enable_consul = false
+  
+  # CPU pinning for cache optimization
+  [experimental.processes]
+    web = """
+      exec taskset -c 0 /server
+    """

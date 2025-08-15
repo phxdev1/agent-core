@@ -1,0 +1,74 @@
+{
+    admin off
+    auto_https off
+    
+    # Enable Consul service discovery
+    servers {
+        dynamic consul {
+            address consul.service.consul:8500
+            service_tag caddy
+        }
+    }
+}
+
+# Consul-based dynamic service discovery
+:80, :443 {
+    @api {
+        path /api/* /docs* /openapi.json /health /ws/*
+    }
+    
+    handle @api {
+        reverse_proxy {
+            # Consul service discovery
+            dynamic consul {
+                service api
+                healthy true
+                tag production
+            }
+            
+            lb_policy round_robin
+            
+            # Headers
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    handle {
+        reverse_proxy {
+            # Consul service discovery for web
+            dynamic consul {
+                service web
+                healthy true
+                tag production
+            }
+            
+            lb_policy ip_hash
+            
+            # Headers
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Security headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    encode gzip zstd
+
+    log {
+        output stdout
+        format console
+        level ERROR
+    }
+}

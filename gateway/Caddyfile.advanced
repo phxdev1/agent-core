@@ -1,0 +1,111 @@
+{
+    # Global options
+    admin off
+    auto_https on
+}
+
+# Main domain configuration with advanced load balancing
+:80, :443 {
+    # API routes with multiple backends
+    @api {
+        path /api/* /docs* /openapi.json /health /ws/*
+    }
+    handle @api {
+        reverse_proxy {
+            # Multiple API instances for load balancing
+            # Fly.io will automatically discover all instances
+            to http://agent-core-api.internal:8000
+            
+            # Advanced load balancing options
+            lb_policy least_conn  # least_conn is better for APIs with varying response times
+            
+            # Health checks
+            health_uri /health
+            health_interval 5s
+            health_timeout 2s
+            health_status 200
+            
+            # Circuit breaker settings
+            fail_duration 30s
+            max_fails 5
+            unhealthy_status 500 502 503
+            unhealthy_latency 5s
+            unhealthy_request_count 10
+            
+            # Retries and timeouts
+            lb_retries 3
+            lb_try_duration 10s
+            lb_try_interval 250ms
+            
+            # Connection pooling
+            keepalive 100
+            keepalive_idle_conns 10
+            
+            # Headers to pass to backend
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Web interface with sticky sessions
+    handle {
+        reverse_proxy {
+            to http://agent-core-web.internal:8001
+            
+            # IP hash for sticky sessions (useful for stateful web apps)
+            lb_policy ip_hash
+            
+            # Health checks
+            health_uri /
+            health_interval 10s
+            health_timeout 3s
+            health_status 200
+            
+            # Circuit breaker
+            fail_duration 30s
+            max_fails 3
+            
+            # Pass headers
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Rate limiting (requires additional plugin)
+    # rate_limit {
+    #     zone api_limit {
+    #         key {remote_host}
+    #         rate 100r/m
+    #         buffer 50
+    #     }
+    # }
+
+    # Security headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+        -Server
+    }
+
+    # Enable compression
+    encode gzip zstd
+
+    # Request/Response buffering
+    request_body {
+        max_size 10MB
+    }
+
+    # Logging with custom format
+    log {
+        output stdout
+        format json
+        level INFO
+    }
+}

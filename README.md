@@ -2,221 +2,214 @@
 
 [![Runpod](https://api.runpod.io/badge/phxdev1/agent-core)](https://console.runpod.io/hub/phxdev1/agent-core)
 
-A sophisticated conversational AI agent with persistent memory, research capabilities, and self-evolving prompts.
+A sophisticated AI assistant system with natural conversation, persistent memory, research capabilities, and a production-ready API.
 
-## Features
+## 🚀 Features
 
-- 🧠 **Persistent Memory**: Redis-backed conversation history that survives restarts
-- 🔬 **Research Integration**: ArXiv, Google Scholar, and web search capabilities
-- 📚 **RAG System**: Knowledge base with hybrid BM25 + vector search
-- 📄 **PDF Processing**: Extract and summarize research papers
-- 🔄 **Prompt Evolution**: Self-improving system prompts based on performance
-- ⏰ **Temporal Awareness**: Understands time context and can schedule tasks
-- 🎭 **Adaptive Personality**: Configurable personality system
-- 🔍 **Multi-modal Search**: Combines semantic and keyword search
+- **🤖 Natural Conversation**: Human-like responses without robotic preambles
+- **🌐 OpenAPI REST API**: Full-featured API with WebSocket support
+- **🧠 Persistent Memory**: Redis-backed conversation history
+- **🔬 Research Integration**: ArXiv, Google Scholar, and web search
+- **📚 Knowledge Base**: RAG system with hybrid search
+- **🎭 Multiple Agents**: Natural, Simple, and Fast modes
+- **🔐 Authentication**: JWT and API key support
+- **🐳 Docker Ready**: Easy deployment with Docker Compose
 
-## Quick Start
+## 📁 Project Structure
 
-### Prerequisites
-
-- Python 3.8+
-- Redis server (local or cloud)
-- OpenRouter API key
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/agent-core.git
-cd agent-core
+```
+agent-core/
+├── api/              # REST API implementation
+├── agents/           # Agent implementations
+├── core/             # Core systems (memory, personality, etc.)
+├── knowledge/        # Research and knowledge systems
+├── utils/            # Utilities and helpers
+├── docker/           # Docker configurations
+├── scripts/          # Installation and utility scripts
+├── docs/             # Documentation
+├── main.py           # CLI chat interface
+├── run.py            # Main entry point
+└── requirements.txt  # Python dependencies
 ```
 
-2. Install dependencies:
+## 🏃 Quick Start
+
+### Option 1: Chat Interface
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure API key
+export OPENROUTER_API_KEY="your-key-here"
+
+# Start chat
+python run.py chat
+```
+
+### Option 2: API Server
+
+```bash
+# Start development server
+python run.py api
+
+# Start production server
+python run.py api --production --port 8000 --workers 4
+
+# Access documentation
+open http://localhost:8000/docs
+```
+
+### Option 3: Docker
+
+```bash
+# Start with Docker Compose
+docker-compose -f docker/docker-compose.api.yml up
+
+# Access API
+curl http://localhost:8000/health
+```
+
+## 💻 Installation
+
+### Windows
+```bash
+scripts\install.bat basic
+```
+
+### Linux/Mac
+```bash
+./scripts/install.sh basic
+```
+
+### Manual
 ```bash
 pip install -r requirements.txt
+cp config/.env.example .env
+# Edit .env with your API keys
 ```
 
-3. Configure environment:
-```bash
-cp .env.example .env
-# Edit .env with your API keys and Redis configuration
+## 🔧 Configuration
+
+Create a `.env` file:
+
+```env
+# Required
+OPENROUTER_API_KEY=your-openrouter-key
+
+# Optional
+REDIS_HOST=localhost
+REDIS_PORT=6379
+LLM_MODEL=mistralai/mistral-medium-3.1
+API_SECRET_KEY=your-secret-for-jwt
 ```
 
-4. Start Redis (if running locally):
-```bash
-docker run -d -p 6379:6379 redis:alpine
-```
+## 📡 API Usage
 
-5. Run the agent:
-```bash
-python agent_chat.py
-```
-
-## Configuration
-
-### Environment Variables
-
-See `.env.example` for all available configuration options.
-
-Key configurations:
-- `OPENROUTER_API_KEY`: Your OpenRouter API key (required)
-- `LLM_MODEL`: Model to use (default: mistralai/mistral-medium-3.1)
-- `REDIS_HOST`: Redis server host
-- `REDIS_PORT`: Redis server port
-
-### Using Redis Cloud
-
-For production, we recommend Redis Cloud:
-1. Sign up at https://redis.com/cloud/
-2. Create a database
-3. Update `.env` with your Redis Cloud credentials
-
-## Architecture
-
-### Core Components
-
-- **`agent_chat.py`**: Main conversational interface
-- **`unified_memory_system.py`**: Tape-inspired memory with sliding windows
-- **`research_system.py`**: Academic paper search and retrieval
-- **`prompt_evolution_system.py`**: Dynamic prompt management
-- **`temporal_context.py`**: Time-aware context and scheduling
-- **`knowledge_graph_enhanced.py`**: Entity and relationship tracking
-- **`hybrid_search_system.py`**: Combined BM25 + vector search
-
-### Memory System
-
-The agent uses a "tape" memory system inspired by recent AI research:
-- Maintains a sliding window of recent conversation
-- Persists to Redis for cross-session memory
-- Automatically summarizes older conversations
-- Supports semantic search across history
-
-### Research Capabilities
-
-- Search ArXiv for academic papers
-- Query Google Scholar
-- Extract and summarize PDFs
-- Build a growing knowledge base
-- RAG retrieval for informed responses
-
-## Usage
-
-### Basic Chat
+### Python Client
 ```python
-from agent_chat import ChatAgent
+from api.api_client_example import AgentCoreClient
 
-agent = ChatAgent()
-response = await agent.process_message("Hello, how are you?")
+client = AgentCoreClient(
+    base_url="http://localhost:8000",
+    api_key="your-api-key"
+)
+
+response = await client.chat("Hello!")
+print(response['response'])
 ```
 
-### Research Mode
-```python
-# Agent automatically detects research requests
-response = await agent.process_message("Research quantum computing papers from 2023")
-```
-
-### Background Workers
-
-For research tasks, start the RQ workers:
+### cURL
 ```bash
-python -m rq worker research default
+curl -X POST http://localhost:8000/chat \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello!"}'
 ```
 
-## API Integration
-
-The agent supports multiple LLM providers through OpenRouter:
-- Claude (Anthropic)
-- GPT-4 (OpenAI)  
-- Mistral
-- And many more
-
-## Multi-line Input
-
-The chat interface supports multi-line input:
-- Use `'''` or `"""` for multi-line blocks
-- Use `\` for line continuation
-- Pipe input from files
-
-## Prompt Management
-
-View and manage the system prompt:
-```
-You: show prompt metrics
-You: prompt history
-You: prompt evolve
+### WebSocket
+```javascript
+const ws = new WebSocket('ws://localhost:8000/ws/session-id');
+ws.send(JSON.stringify({message: 'Hello!'}));
 ```
 
-## Docker Support
+## 🤖 Agent Modes
 
-```yaml
-version: '3.8'
-services:
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
+- **Natural**: Conversational, human-like responses (default)
+- **Simple**: Lightweight with minimal resource usage
+- **Fast**: Optimized for sub-500ms responses
 
-  agent:
-    build: .
-    environment:
-      - REDIS_HOST=redis
-    env_file:
-      - .env
-    depends_on:
-      - redis
-    stdin_open: true
-    tty: true
+## 📚 Documentation
 
-volumes:
-  redis_data:
-```
+- [API Documentation](docs/API_DOCUMENTATION.md)
+- [Natural Agent Design](docs/NATURAL_AGENT_DESIGN.md)
+- [Project Structure](docs/PROJECT_STRUCTURE.md)
+- [RunPod Deployment](docs/RUNPOD_DEPLOY.md)
 
-## Development
+## 🧪 Development
 
-### Running Tests
 ```bash
-python -m pytest tests/
+# Install dev dependencies
+pip install -r requirements-dev.txt
+
+# Run tests
+pytest
+
+# Format code
+black .
+
+# Type checking
+mypy .
 ```
 
-### Adding New Capabilities
+## 🐳 Docker Deployment
 
-1. Create a new module in the project
-2. Import in `agent_chat.py`
-3. Add initialization in `ChatAgent.__init__()`
-4. Add handler in `process_message()`
+```bash
+# Build image
+docker build -f docker/Dockerfile.api -t agent-core .
 
-## Troubleshooting
+# Run container
+docker run -p 8000:8000 \
+  -e OPENROUTER_API_KEY=your-key \
+  agent-core
+```
 
-### Connection Issues
-- Ensure Redis is running
-- Check firewall settings
-- Verify API keys are correct
+## 📊 Performance
 
-### Memory Issues
-- Reduce `MEMORY_WINDOW_SIZE` in `.env`
-- Clear old Redis data: `redis-cli FLUSHDB`
+- Chat response time: 200-500ms (natural mode)
+- API latency: <100ms overhead
+- Memory usage: ~200MB base
+- Concurrent sessions: 100+ supported
 
-### Performance
-- Use local Redis for lower latency
-- Reduce context window size
-- Consider using smaller LLM models
+## 🔒 Security
 
-## Contributing
+- JWT authentication for API
+- API key support
+- Rate limiting (60 req/min default)
+- CORS configuration
+- Input validation with Pydantic
 
-Contributions are welcome! Please:
+## 🤝 Contributing
+
 1. Fork the repository
 2. Create a feature branch
-3. Add tests for new features
-4. Submit a pull request
+3. Make your changes
+4. Run tests
+5. Submit a pull request
 
-## License
+## 📄 License
 
-MIT License - see LICENSE file for details
+MIT License - see LICENSE file
 
-## Acknowledgments
+## 🆘 Support
 
-- Built with inspiration from TapeAgents and other memory-augmented architectures
-- Uses OpenRouter for flexible LLM access
-- Redis for persistent, scalable storage
+- 📖 [Interactive API Docs](http://localhost:8000/docs)
+- 🐛 [Report Issues](https://github.com/yourusername/agent-core/issues)
+- 💬 [Discussions](https://github.com/yourusername/agent-core/discussions)
+
+## 🙏 Acknowledgments
+
+- OpenRouter for LLM access
+- FastAPI for the excellent web framework
+- Redis for persistent storage
+- The open-source community

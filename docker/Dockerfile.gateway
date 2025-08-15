@@ -1,0 +1,31 @@
+# Scratch-based Caddy image for minimal size
+FROM caddy:2-builder AS builder
+
+# Build Caddy with only needed modules
+RUN xcaddy build \
+    --with github.com/caddy-dns/cloudflare
+
+# Final stage - from scratch
+FROM scratch
+
+# Copy Caddy binary
+COPY --from=builder /usr/bin/caddy /bin/caddy
+
+# Copy CA certificates for HTTPS
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+# Copy Caddyfile
+COPY gateway/Caddyfile.us-eu /etc/caddy/Caddyfile
+
+# Create data directory
+VOLUME ["/data"]
+
+# Optimize for low memory
+ENV GOGC=50
+ENV GOMEMLIMIT=180MiB
+
+EXPOSE 80 443
+
+# Run Caddy
+ENTRYPOINT ["/bin/caddy"]
+CMD ["run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

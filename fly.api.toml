@@ -1,0 +1,38 @@
+# fly.toml app configuration file for API
+# See https://fly.io/docs/reference/configuration/
+
+app = 'agent-core-api'
+primary_region = 'phx'
+kill_signal = 'SIGINT'
+kill_timeout = '5s'
+
+[build]
+  dockerfile = 'docker/Dockerfile.api'
+
+[env]
+  PORT = '8000'
+  REDIS_DB = '0'
+  ARXIV_MAX_RESULTS = '5'
+  SCHOLAR_MAX_RESULTS = '5'
+  MEMORY_WINDOW_SIZE = '20'
+  CONTEXT_WINDOW_SIZE = '4'
+  ENABLE_GPU = 'false'
+  LOG_LEVEL = 'INFO'
+  LLM_MODEL = 'mistralai/mistral-medium-3.1'
+  LLM_MAX_TOKENS = '2048'
+  LLM_TEMPERATURE = '0.7'
+
+[[services]]
+  internal_port = 8000
+  protocol = "tcp"
+  processes = ['app']
+  
+  # No public ports - internal only
+  # The service will be accessible via:
+  # - agent-core-api.internal:8000 (all instances)
+  # - <machine-id>.vm.agent-core-api.internal:8000 (specific instance)
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1

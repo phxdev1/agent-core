@@ -1,0 +1,27 @@
+# Distroless Python image for Web Interface
+# Multi-stage build for minimal size
+FROM python:3.12-alpine AS builder
+
+WORKDIR /app
+
+# Install dependencies
+RUN pip install --no-cache-dir --target=/app/deps aiofiles
+
+# Final stage - distroless
+FROM gcr.io/distroless/python3-debian12
+
+WORKDIR /app
+
+# Copy dependencies and application
+COPY --from=builder /app/deps /app/deps
+COPY web/ ./web/
+
+# Add deps to Python path
+ENV PYTHONPATH=/app/deps:$PYTHONPATH
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONOPTIMIZE=2
+
+EXPOSE 8001
+
+# Run directly with Python
+ENTRYPOINT ["python3", "web/serve.py"]

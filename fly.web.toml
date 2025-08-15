@@ -1,0 +1,33 @@
+# fly.toml app configuration file for Web Interface
+# See https://fly.io/docs/reference/configuration/
+
+app = 'agent-core-web'
+primary_region = 'phx'
+kill_signal = 'SIGINT'
+kill_timeout = '5s'
+
+[build]
+  dockerfile = 'docker/Dockerfile.web.simple'  # Simple static file server
+
+[env]
+  PORT = '8001'
+  API_URL = 'https://agent-core-autumn-pond-8052.fly.dev'
+
+# No public HTTP service - only accessible internally
+# The API gateway will route traffic to this service
+
+[[services]]
+  protocol = 'tcp'
+  internal_port = 8001
+  processes = ['app']
+  
+  # No public ports - internal only
+  # The service will be accessible via:
+  # - agent-core-web.internal:8001 (all instances)
+  # - <machine-id>.vm.agent-core-web.internal:8001 (specific instance)
+
+[[vm]]
+  memory = '256mb'  # Minimum allowed by Fly.io
+  cpu_kind = 'shared'
+  cpus = 1
+  size = 'shared-cpu-1x'  # Smallest instance

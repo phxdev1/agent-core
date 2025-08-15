@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # API Gateway (Caddy)
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_BACKEND: "http://api:8000"
+      WEB_BACKEND: "http://web:8001"
+    depends_on:
+      - api
+      - web
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  # API Service
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    environment:
+      PORT: 8000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      SERPAPI_API_KEY: ${SERPAPI_API_KEY}
+      LLM_MODEL: mistralai/mistral-medium-3.1
+      LLM_MAX_TOKENS: 2048
+      LLM_TEMPERATURE: 0.7
+    depends_on:
+      - redis
+    networks:
+      - agent-network
+    deploy:
+      replicas: 2  # Run 2 API instances for load balancing demo
+    restart: unless-stopped
+
+  # Web Interface
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    environment:
+      PORT: 8001
+      API_URL: "http://gateway/api"
+    networks:
+      - agent-network
+    deploy:
+      replicas: 1
+    restart: unless-stopped
+
+  # Redis for persistence
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+networks:
+  agent-network:
+    driver: bridge
+
+volumes:
+  redis-data:

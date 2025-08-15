@@ -1,0 +1,78 @@
+{
+    # Global options
+    admin off
+    auto_https on
+}
+
+# Main domain configuration
+:80, :443 {
+    # API routes - anything starting with /api, /docs, /openapi
+    @api {
+        path /api/* /docs* /openapi.json /health /ws/*
+    }
+    handle @api {
+        reverse_proxy {
+            # Load balance between multiple API instances
+            to {$API_BACKEND:http://agent-core-api.internal:8000}
+            
+            # Load balancing policy: round_robin, random, least_conn, ip_hash
+            lb_policy round_robin
+            
+            # Health checks
+            health_uri /health
+            health_interval 10s
+            health_timeout 2s
+            health_status 200
+            
+            # Circuit breaker
+            fail_duration 10s
+            max_fails 3
+            
+            # Retry failed requests
+            lb_retries 2
+            lb_try_duration 5s
+        }
+    }
+
+    # Web interface - everything else
+    handle {
+        reverse_proxy {
+            # Load balance between multiple web instances
+            to {$WEB_BACKEND:http://agent-core-web.internal:8001}
+            
+            # Load balancing policy
+            lb_policy round_robin
+            
+            # Health checks (assuming web has a health endpoint)
+            health_uri /
+            health_interval 10s
+            health_timeout 2s
+            health_status 200
+            
+            # Circuit breaker
+            fail_duration 10s
+            max_fails 3
+        }
+    }
+
+    # Common headers
+    header {
+        # Security headers
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        
+        # Remove server header
+        -Server
+    }
+
+    # Enable compression
+    encode gzip zstd
+
+    # Logging
+    log {
+        output stdout
+        format json
+    }
+}

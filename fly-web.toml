@@ -1,0 +1,25 @@
+app = "agent-core-web"
+primary_region = "phx"
+
+[build]
+  dockerfile = "web-app/Dockerfile"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[http_service.concurrency]
+  type = "requests"
+  hard_limit = 25
+  soft_limit = 20
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[env]
+  PUBLIC_API_URL = "https://agent-core-gateway.fly.dev"

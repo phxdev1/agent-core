@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # Redis for memory and caching
+  redis:
+    image: redis:7-alpine
+    container_name: agent-core-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Agent Core API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: agent-core-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # API Configuration
+      API_SECRET_KEY: ${API_SECRET_KEY:-change-this-in-production}
+      
+      # OpenRouter Configuration
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      LLM_MODEL: ${LLM_MODEL:-mistralai/mistral-medium-3.1}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-2048}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
+      
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: 0
+      
+      # Research APIs (optional)
+      SERPAPI_KEY: ${SERPAPI_KEY:-}
+      
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - agent-network
+
+  # Nginx reverse proxy (optional, for production)
+  nginx:
+    image: nginx:alpine
+    container_name: agent-core-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+    networks:
+      - agent-network
+    profiles:
+      - production
+
+  # Background worker for research tasks
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: agent-core-worker
+    restart: unless-stopped
+    command: python -m rq worker --url redis://redis:6379 research default
+    environment:
+      # Same environment as API
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SERPAPI_KEY: ${SERPAPI_KEY:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - agent-network
+    profiles:
+      - with-worker
+
+networks:
+  agent-network:
+    driver: bridge
+
+volumes:
+  redis-data:

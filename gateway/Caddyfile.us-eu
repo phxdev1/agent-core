@@ -1,0 +1,93 @@
+{
+    # US-EU Configuration
+    admin off
+    auto_https off
+}
+
+# Main domain - simplified 2-region setup
+:80, :443 {
+    # API routes
+    @api {
+        path /api/* /docs* /openapi.json /health /ws/*
+    }
+    
+    handle @api {
+        reverse_proxy {
+            # Use Fly.io internal DNS for automatic service discovery
+            # This automatically resolves to ALL instances of the API app
+            to http://agent-core-api.internal:8000
+            
+            # Simple load balancing
+            lb_policy round_robin
+            
+            # Health checks
+            health_uri /health
+            health_interval 10s
+            health_timeout 2s
+            health_status 200
+            
+            # Failover settings
+            fail_duration 30s
+            max_fails 3
+            
+            # Retries
+            lb_retries 2
+            lb_try_duration 5s
+            
+            # Headers
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Web interface
+    handle {
+        reverse_proxy {
+            # Use Fly.io internal DNS for automatic service discovery
+            # This automatically resolves to ALL instances of the web app
+            to http://agent-core-web.internal:8001
+            
+            # Sticky sessions for better UX
+            lb_policy ip_hash
+            
+            # Health check - use /health endpoint or accept 301 redirect
+            health_uri /health
+            health_interval 15s
+            health_timeout 3s
+            health_status 200
+            
+            # Headers
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Security headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    # Region identification (for debugging)
+    header {
+        X-Served-By "{system.hostname}"
+        X-Region "{env.FLY_REGION}"
+    }
+
+    # Compression
+    encode gzip zstd
+
+    # Logging
+    log {
+        output stdout
+        format console
+        level ERROR
+    }
+}

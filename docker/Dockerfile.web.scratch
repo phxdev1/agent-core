@@ -1,0 +1,41 @@
+# Ultra-minimal scratch-based web server
+FROM golang:1.21-alpine AS builder
+
+WORKDIR /build
+
+# Copy web files
+COPY web/ ./
+
+# Build static binary with embedded files
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -a -installsuffix cgo -ldflags="-w -s" \
+    -o server server.go
+
+# Build health check binary
+COPY docker/healthcheck.go .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -ldflags="-w -s" -o healthcheck healthcheck.go
+
+# Compress binaries with UPX for even smaller size
+RUN apk add --no-cache upx && \
+    upx --best --lzma server && \
+    upx --best --lzma healthcheck
+
+# Final stage - from scratch (literally nothing)
+FROM scratch
+
+# Copy binaries
+COPY --from=builder /build/server /server
+COPY --from=builder /build/healthcheck /healthcheck
+
+# Add non-root user info (numeric only for scratch)
+USER 1000:1000
+
+EXPOSE 8001
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=2s --start-period=5s --retries=3 \
+    CMD ["/healthcheck"]
+
+# Run the server
+ENTRYPOINT ["/server"]

@@ -1,0 +1,80 @@
+# Multi-region deployment configuration for Fly.io
+# This enables automatic geo-routing and regional failover
+
+app = 'agent-core'
+primary_region = 'phx'  # Primary in Phoenix
+
+# Additional regions for global coverage
+# Fly.io automatically handles Anycast routing to nearest region
+[regions]
+  # North America
+  phx = 1  # Phoenix (primary)
+  lax = 1  # Los Angeles
+  sea = 1  # Seattle
+  ord = 1  # Chicago
+  iad = 1  # Virginia
+  
+  # Europe
+  lhr = 1  # London
+  fra = 1  # Frankfurt
+  ams = 1  # Amsterdam
+  cdg = 1  # Paris
+  
+  # Asia Pacific
+  nrt = 1  # Tokyo
+  sin = 1  # Singapore
+  syd = 1  # Sydney
+  hkg = 1  # Hong Kong
+
+[build]
+  dockerfile = 'docker/Dockerfile.gateway'
+
+[env]
+  # Backend services use internal DNS
+  # Fly.io automatically routes to nearest instance
+  API_BACKEND = 'http://agent-core-api.internal:8000'
+  WEB_BACKEND = 'http://agent-core-web.internal:8001'
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = 'suspend'  # Suspend in low-traffic regions
+  auto_start_machines = true
+  min_machines_running = 0  # Allow scaling to zero in some regions
+  processes = ['app']
+
+  [http_service.concurrency]
+    type = 'connections'
+    hard_limit = 200
+    soft_limit = 150
+
+[[services]]
+  protocol = 'tcp'
+  internal_port = 443
+  
+  [[services.ports]]
+    port = 443
+    handlers = ['tls', 'http']
+
+# Statics for serving cached content from edge
+[[statics]]
+  url_prefix = "/static"
+  guest_path = "/app/static"
+
+# Health checks for regional monitoring
+[[services.tcp_checks]]
+  interval = "15s"
+  timeout = "2s"
+  grace_period = "5s"
+
+[[services.http_checks]]
+  interval = "10s"
+  timeout = "2s"
+  grace_period = "5s"
+  method = "get"
+  path = "/api/health"
+  
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1

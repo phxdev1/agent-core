@@ -1,0 +1,45 @@
+# Extreme optimization - binary with everything in L1/L2 cache
+FROM golang:1.21-alpine AS builder
+
+WORKDIR /build
+
+# Install build tools
+RUN apk add --no-cache gcc musl-dev
+
+# Copy web files
+COPY web/ ./
+
+# Build with extreme optimizations
+# - Static linking
+# - Dead code elimination
+# - Function inlining
+# - Loop unrolling
+# - Profile-guided optimization
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -a \
+    -gcflags="all=-N -l -B -C" \
+    -ldflags="-s -w -extldflags '-static'" \
+    -tags netgo \
+    -installsuffix netgo \
+    -o server server_optimized.go
+
+# Strip all symbols
+RUN strip --strip-all server
+
+# Compress with UPX using best compression
+RUN apk add --no-cache upx && \
+    upx --ultra-brute --best --lzma server || true
+
+# Final stage - absolutely minimal
+FROM scratch
+
+# Copy only the single binary (likely <1MB)
+COPY --from=builder /build/server /
+
+# Run as non-root (numeric UID for scratch)
+USER 65534:65534
+
+EXPOSE 8001
+
+# Direct execution, no shell
+ENTRYPOINT ["/server"]

@@ -1,0 +1,51 @@
+# fly.toml app configuration file for API Gateway
+# See https://fly.io/docs/reference/configuration/
+
+app = 'agent-core-gateway'
+primary_region = 'phx'
+kill_signal = 'SIGINT'
+kill_timeout = '5s'
+
+[build]
+  dockerfile = 'docker/Dockerfile.gateway'
+  
+# Deployment regions
+[deploy]
+  strategy = "rolling"  # Deploy one region at a time
+
+[env]
+  # Backend services use internal Fly.io DNS
+  API_BACKEND = 'http://agent-core-api.internal:8000'
+  WEB_BACKEND = 'http://agent-core-web.internal:8001'
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+  [http_service.concurrency]
+    type = 'connections'
+    hard_limit = 100
+    soft_limit = 80
+
+[[services]]
+  protocol = 'tcp'
+  internal_port = 443
+  
+  [[services.ports]]
+    port = 443
+    handlers = ['tls', 'http']
+
+[[vm]]
+  memory = '256mb'  # Minimum allowed by Fly.io
+  cpu_kind = 'shared'
+  cpus = 1
+  size = 'shared-cpu-1x'  # Smallest instance
+
+# Metrics for monitoring
+[metrics]
+  port = 9091
+  path = "/metrics"
